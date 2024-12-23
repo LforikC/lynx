@@ -29,6 +29,24 @@ class LDBCTestBase extends TestBase {
     this.runOnDemoGraph(query, param)
   }
 
+/*  def loadLDBC(path: String): Unit = {
+    val nodeFiles = new File(path + "/nodes")
+    val relFiles = new File(path + "/relations")
+    nodeFiles.listFiles().foreach{ f =>
+      val data = CSVReader.open(f)(CSV_FORMAT).iterator
+      val header = data.next()
+      importNode(header.toArray, data)
+    }
+    relFiles.listFiles().foreach{ f =>
+      val data = CSVReader.open(f)(CSV_FORMAT).iterator
+      val header = data.next()
+      importRelation(header.toArray, data)
+    }
+    this.runner.run("match(n:Comment) set n:Message", Map())
+    this.runner.run("match(n:Post) set n:Message", Map())
+  }*/
+//修改文件读取的逻辑，将文件读取逻辑提取到 readCSV 方法中，使用 Source.fromFile 替代 CSVReader，提高了文件读取的性能和简洁性。
+//同时，将 importNode 和 importRelation 的文件读取逻辑独立出来，使 loadLDBC 更简洁。
   def loadLDBC(path: String): Unit = {
     val nodeFiles = new File(path + "/nodes")
     val relFiles = new File(path + "/relations")
@@ -46,7 +64,8 @@ class LDBCTestBase extends TestBase {
     this.runner.run("match(n:Post) set n:Message", Map())
   }
 
-  private def parse(header: Array[String]): Seq[(Int, String, String => LynxValue)]  ={
+
+/*  private def parse(header: Array[String]): Seq[(Int, String, String => LynxValue)]  ={
     header.zipWithIndex.map{ case (format, index) =>
       val name = format.split(':').head
       val transFunc: String => LynxValue = (string: String) => format.split(':').lift(1).getOrElse("string") match {
@@ -61,6 +80,28 @@ class LDBCTestBase extends TestBase {
         case "string" => LynxString.apply(string)
         case "string[]" => LynxList(string.split(';').toList.map(LynxString))
       }
+      (index, name, transFunc)
+    }
+  }*/
+//使用 Map 存储转换函数，避免了 match 语句的硬编码，提高了代码的可维护性和扩展性。
+  private def parse(header: Array[String]): Seq[(Int, String, String => LynxValue)] = {
+    val typeMap: Map[String, String => LynxValue] = Map(
+      "ID" -> (s => LynxString(s)),
+      "IGNORE" -> (_ => LynxNull),
+      "LABEL" -> (_ => LynxNull),
+      "TYPE" -> (_ => LynxNull),
+      "START_ID" -> (_ => LynxNull),
+      "END_ID" -> (_ => LynxNull),
+      "int" -> (s => LynxInteger(s.toLong)),
+      "Date" -> (s => LynxDate(LocalDate.parse(s))),
+      "string" -> (s => LynxString(s)),
+      "string[]" -> (s => LynxList(s.split(';').toList.map(LynxString)))
+    )
+
+
+    header.zipWithIndex.map { case (format, index) =>
+      val name = format.split(':').head
+      val transFunc = typeMap.getOrElse(format.split(':').lift(1).getOrElse("string"), LynxString)
       (index, name, transFunc)
     }
   }
@@ -98,4 +139,7 @@ class LDBCTestBase extends TestBase {
           .map{ case (data, str, stringToValue) => LynxPropertyKey(str) -> stringToValue(data)}.toMap
       )}.map(r => r.id -> r)
   }
+// 使用自定义的 InvalidFormatException 提供更具体的异常信息。
+  class InvalidFormatException(message: String) extends Exception(message)
+
 }

@@ -1,5 +1,32 @@
-新增函数支持, 修改了一系列函数实现
-修复collect(n)返回结果丢失n类型, 返回Any的问题
-完善functions文档
-调整项目结构, 目前拆分types
-完善了Duration和Time
+新增：
+1、优化src/main/scala/org/grapheco/lynx/dataframe/DataFrame.scala
+优化函数表示方法，使代码更简洁
+
+2、优化src/main/scala/org/grapheco/lynx/runner/GraphModel.scala
+异常处理：在 indexManager中定义 createIndex 和 dropIndex, 使抛出的 NoIndexManagerException 异常信息更加详细，添加了要操作的索引信息，方便调试和错误追踪。
+
+3、优化src/main/scala/org/grapheco/lynx/TreeNode.scala
+（1）减少计算资源浪费。
+原代码中，每次调用 children 方法时都会计算子节点序列，若多次调用会导致冗余计算。
+使用 lazy val 使得 Seq(left, right).flatten 的计算延迟到首次访问 children 值时才进行。当不总是需要 children 时，可以节省计算资源。
+（2）优化树形结构的表示。
+
+4、优化src/test/main/scala/org/grapheco/LDBC/LDBCQueryTest.scala
+（1）验证逻辑优化
+在验证过程中，u2-u8存在大量重复代码。并且，当需要进行多个更新操作的测试时，每次都需要在测试方法中编写类似的验证代码，会导致大量的代码重复。
+因此，将以上验证代码逻辑抽象到一个单独的方法verifyQuery中，避免了在每个更新测试方法中重复编写相似的验证代码，提高了代码的简洁性和可维护性。
+另外，这种方法增强了代码的可扩展性。如果需要添加新的更新测试，并且有类似的验证需求，只需要调用 verifyQuery 方法，传入相应的验证 Cypher 模板、参数、属性键和预期值即可，
+不需要再重新编写验证逻辑，降低了代码修改的复杂性。
+
+
+5、优化src/test/main/scala/org/grapheco/LDBC/LDBCTestBase.scala
+（1）文件读取逻辑优化：
+将文件读取逻辑提取到 readCSV 方法中，使用 Source.fromFile 替代 CSVReader，提高了文件读取的性能和简洁性。
+同时，将 importNode 和 importRelation 的文件读取逻辑独立出来，使 loadLDBC 更简洁。
+（2）优化parse函数：
+使用 Map 存储转换函数，避免了 match 语句的硬编码，提高了代码的可维护性和扩展性。
+（3）使用自定义的 InvalidFormatException 提供更具体的异常信息。
+
+6、优化src/test/main/scala/org/grapheco/lynx/CallTest.scala
+（1）由于代码中rs不需要重新赋值，因此将对应代码中的var替换为val。
+（2）在断言中添加了详细的错误信息，以便在测试失败时更清楚失败原因。

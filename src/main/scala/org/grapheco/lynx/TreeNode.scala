@@ -5,8 +5,9 @@ import scala.collection.mutable
 
 trait TreeNode{
   type SerialType <: TreeNode
-  def children: Seq[SerialType] = Seq(left, right).flatten
-
+//  def children: Seq[SerialType] = Seq(left, right).flatten
+//
+  lazy val children: Seq[SerialType] = Seq(left, right).flatten
   var left: Option[SerialType]
   var right: Option[SerialType]
 
@@ -23,10 +24,12 @@ trait TreeNode{
             recTreeToString(top, prefix.dropRight(4), remainingStack)
         }
       case last :: Nil =>
-        Seq(s"$prefix╙──${last.description}") ++
+        // 使用 └── 表示最后一个节点
+        Seq(s"$prefix└──${last.description}") ++
         recTreeToString(last.children.toList, s"$prefix    ", Nil :: stack)
       case next :: siblings =>
-        Seq(s"$prefix╟──${next.description}") ++
+        // 使用 ├── 表示非最后一个节点
+        Seq(s"$prefix├──${next.description}") ++
         recTreeToString(next.children.toList, s"$prefix║   ", siblings :: stack)
     }
   }

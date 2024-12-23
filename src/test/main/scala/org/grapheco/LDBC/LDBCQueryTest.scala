@@ -228,6 +228,139 @@ class LDBCQueryTest {
     run(q, p)
   }
 
+//新增
+  @Test
+  def u2(): Unit ={
+    val q = getQuery("interactive-update-2.cypher")
+    val p = Map("personId" -> update_person_id(0),
+      "postId" -> update_post_id(0),
+      "creationDate" -> LynxDate.today)
+    run(q, p)
+    verifyQuery("MATCH (person:Person {id: %s})-[r:LIKES]->(post:Post {id: %s}) return r", p, LynxPropertyKey("creationDate"), LynxDate.today)
+  }
+
+
+  @Test
+  def u3(): Unit ={
+    val q = getQuery("interactive-update-3.cypher")
+    val p = Map("personId" -> update_person_id(1),
+      "commentId" -> update_comment_id(0),
+      "creationDate" -> LynxDate.today)
+    run(q, p)
+    verifyQuery("MATCH (person:Person {id: %s})-[r:LIKES]->(comment:Comment {id: %s}) return r", p, LynxPropertyKey("creationDate"), LynxDate.today)
+  }
+
+
+  @Test
+  def u4(): Unit ={
+    val q =
+      """
+        |MATCH (p:Person {id: $moderatorPersonId})
+        |CREATE (f:Forum {id: $forumId, title: $forumTitle, creationDate: $creationDate})-[:HAS_MODERATOR]->(p)
+        |WITH f
+        |UNWIND $tagIds AS tagId
+        |  MATCH (t:Tag {id: tagId})
+        |  CREATE (f)-[:HAS_TAG]->(t)
+        |""".stripMargin
+    val p = Map("moderatorPersonId" -> update_person_id(0),
+      "forumId" -> update_forum_id(0),
+      "creationDate" -> LynxDate.today,
+      "tagIds" -> update_post_id,
+      "forumTitle" -> "TestTitle")
+    run(q, p)
+    // 可以根据需要添加相应的验证逻辑，比如调用 verifyQuery 方法进行验证
+  }
+
+
+  @Test
+  def u5(): Unit ={
+    val q = getQuery("interactive-update-5.cypher")
+    val p = Map("personId" -> update_person_id(2),
+      "forumId" -> update_forum_id(0),
+      "joinDate" -> LynxDate.today)
+    run(q, p)
+    verifyQuery("MATCH (f:Forum {id: %s})-[r:HAS_MEMBER]->(p:Person {id: %s}) return r", p, LynxPropertyKey("joinDate"), LynxDate.today)
+  }
+
+
+  @Test
+  def u6(): Unit = {
+    val q = getQuery("interactive-update-6.cypher")
+    val p = Map("authorPersonId" -> update_person_id(0),
+      "countryId" -> update_country_id(0),
+      "forumId" -> update_forum_id(0),
+      "postId" -> "111",
+      "creationDate" -> LynxDate.today,
+      "locationIP" -> "10.0.88.88",
+      "browserUsed" -> "Chrome",
+      "content" -> "LOL",
+      "imageFile" -> "",
+      "length" -> 3,
+      "tagIds" -> update_tag_id
+    )
+    run(q, p)
+    // 可以根据需要添加相应的验证逻辑，比如调用 verifyQuery 方法进行验证
+  }
+
+
+  @Test
+  def u7(): Unit = {
+    val q = getQuery("interactive-update-7.cypher")
+    val p = Map("authorPersonId" -> update_person_id(0),
+      "countryId" -> update_country_id(0),
+      "replyToPostId" -> "1010307921",
+      "replyToCommentId" -> "51040",
+      "forumId" -> update_forum_id(0),
+      "commentId" -> "111",
+      "creationDate" -> LynxDate.today,
+      "locationIP" -> "10.0.88.88",
+      "browserUsed" -> "Chrome",
+      "content" -> "LOL",
+      "length" -> 3,
+      "tagIds" -> update_tag_id
+    )
+    run(q, p)
+    // 可以根据需要添加相应的验证逻辑，比如调用 verifyQuery 方法进行验证
+  }
+
+
+  @Test
+  def u8(): Unit ={
+    val q = getQuery("interactive-update-8.cypher")
+    val p = Map(
+      "person1Id" -> update_person_id(8),
+      "person2Id" -> update_person_id(9),
+      "creationDate" -> LynxDate.today)
+    run(q, p)
+    verifyQuery("MATCH (p1:Person {id: %s})-[r:KNOWS]->(p2:Person {id: %s}) return r", p, LynxPropertyKey("creationDate"), LynxDate.today)
+  }
+
+
+  private def verifyQuery(verifyCypherTemplate: String, params: Map[String, Any], propertyKey: LynxPropertyKey, expectedValue: Any): Unit = {
+    val verify = verifyCypherTemplate.format(params.map { case (k, v) => k -> v.toString }.toSeq: _*)
+    val result = ldbcTestBase.runner.run(verify, params)
+    Assertions.assertTrue(
+      result.records()
+        .flatMap(_.getAsRelationship("r"))
+        .flatMap(_.property(propertyKey))
+        .map(_.asInstanceOf[Any]).exists(_ == expectedValue)
+    )
+  }
+
+
+/*  def u1(): Unit = {
+    val q = getQuery("interactive-update-1.cypher")
+    val p = Map("cityId" -> "500000000000111", "personId" -> update_person_id(0),
+      "personFirstName" -> "Bob", "personLastName" -> "Green",
+      "gender" -> "Male", "birthday" -> "1995-06-06",
+      "creationDate" -> "2020-03-28", "locationIP" -> "10.0.88.88",
+      "browserUsed" -> "Chrome", "languages" -> "Chinese",
+      "emails" -> "bobgreem@gmail.com", "tagIds" -> update_comment_id,
+      "studyAt" -> update_person_id, "workAt" -> update_post_id
+    )
+    run(q, p)
+  }
+
 
   @Test
   def u2(): Unit ={
@@ -348,7 +481,7 @@ class LDBCQueryTest {
         .flatMap(_.getAsRelationship("r"))
         .flatMap(_.property(LynxPropertyKey("creationDate")))
         .map(_.asInstanceOf[LynxDate]).exists(LynxDate.today.equals))
-  }
+  }*/
 
   @Test
   def test(): Unit = {

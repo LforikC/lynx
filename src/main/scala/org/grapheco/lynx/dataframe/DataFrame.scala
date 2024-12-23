@@ -26,14 +26,20 @@ object DataFrame {
     apply(schema0, () => records.iterator)
 
   def unit(columns: Seq[(String, Expression)])(implicit expressionEvaluator: ExpressionEvaluator, ctx: ExpressionContext): DataFrame = {
-    val schema = columns.map(col =>
+    /*val schema = columns.map(col =>
       col._1 -> expressionEvaluator.typeOf(col._2, Map.empty)
-    )
+    )*/
+    // 使用 for 推导式构建 schema，使代码更简洁
+    val schema = for ((name, expression) <- columns) yield name -> expressionEvaluator.typeOf(expression, Map.empty)
+
 
     DataFrame(schema, () => Iterator.single(
-      columns.map(col => {
+      /*columns.map(col => {
         expressionEvaluator.eval(col._2)(ctx)
-      })))
+      })))*/
+      // 使用 for 推导式计算列的值，使代码更简洁
+      for ((name, expression) <- columns) yield expressionEvaluator.eval(expression)(ctx)
+    ))
   }
 
   def updateColumns(colIndexs: Seq[Int], newColsValues: Seq[Iterator[LynxValue]], srcDF: DataFrame): DataFrame = {

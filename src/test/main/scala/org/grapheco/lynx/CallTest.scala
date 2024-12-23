@@ -33,13 +33,18 @@ class CallTest extends TestBase {
 
   @Test
   def testFullTextIndexQuery(): Unit = {
-    var rs = runOnDemoGraph("call db.index.fulltext.queryNodes(\"111\", \"222\")")
-    Assertions.assertEquals(1, rs.records().size)
+    // 使用 val 代替 var，因为 rs 不需要重新赋值
+    val rs = runOnDemoGraph("call db.index.fulltext.queryNodes(\"111\", \"222\")")
+//    Assertions.assertEquals(1, rs.records().size)
+    // 在断言中添加错误信息，以便在测试失败时更清楚失败原因
+    Assertions.assertEquals(Seq("name"), rs.columns, "Columns should be Seq(name)")
+    Assertions.assertEquals(1, rs.records().size, "There should be 1 record")
+    Assertions.assertEquals(Map("name" ->LynxList(List(LynxString("bluejoe"), LynxString("lzx"), LynxString("airzihao")))), rs.records().toSeq.apply(0))
   }
 
   @Test
   def testFullTextIndexCreate(): Unit = {
-    var rs = runOnDemoGraph("call db.index.fulltext.createNodeIndex(\"111\", [\"222\"],  [\"333\"])")
+    val rs = runOnDemoGraph("call db.index.fulltext.createNodeIndex(\"111\", [\"222\"],  [\"333\"])")
     Assertions.assertEquals(1, rs.records().size)
 
 
@@ -47,14 +52,17 @@ class CallTest extends TestBase {
 
   @Test
   def testWrongCall(): Unit = {
-    Assertions.assertThrows(classOf[UnknownProcedureException], () => runOnDemoGraph("call test.nonexisting()"))
+//    Assertions.assertThrows(classOf[UnknownProcedureException], () => runOnDemoGraph("call test.nonexisting()"))
+//    Assertions.assertThrows(classOf[UnknownProcedureException], ()=> runOnDemoGraph("call test.authors(2)"))
+    // 在断言中添加错误信息，以便在测试失败时更清楚失败原因
+    Assertions.assertThrows(classOf[UnknownProcedureException], () => runOnDemoGraph("call test.nonexisting()"), "Should throw UnknownProcedureException")
+    Assertions.assertThrows(classOf[UnknownProcedureException], () => runOnDemoGraph("call test.authors(2)"), "Should throw UnknownProcedureException")
 
-    Assertions.assertThrows(classOf[UnknownProcedureException], ()=> runOnDemoGraph("call test.authors(2)"))
   }
 
   @Test
   def testCountSimple(): Unit = {
-    var rs = runOnDemoGraph("match (n) return count(n)").records().next()("count(n)")
+    val rs = runOnDemoGraph("match (n) return count(n)").records().next()("count(n)")
     Assertions.assertEquals(LynxInteger(4), rs)
   }
 

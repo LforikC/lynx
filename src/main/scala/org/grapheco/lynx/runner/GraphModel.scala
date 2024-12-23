@@ -40,10 +40,20 @@ trait GraphModel {
    *
    * @return The IndexManager object
    */
-  def indexManager: IndexManager = new IndexManager {
+/*  def indexManager: IndexManager = new IndexManager {
     override def createIndex(index: Index): Unit = throw NoIndexManagerException(s"There is no index manager to handle index creation")
 
     override def dropIndex(index: Index): Unit = throw NoIndexManagerException(s"There is no index manager to handle index dropping")
+
+    override def indexes: Array[Index] = Array.empty
+  }*/
+//定义 indexManager, createIndex 和 dropIndex 抛出的 NoIndexManagerException 异常信息更加详细，添加了要操作的索引信息，方便调试和错误追踪。
+  def indexManager: IndexManager = new IndexManager {
+    override def createIndex(index: Index): Unit =
+      throw new NoIndexManagerException(s"No index manager available to create index $index")
+
+    override def dropIndex(index: Index): Unit =
+      throw new NoIndexManagerException(s"No index manager available to drop index $index")
 
     override def indexes: Array[Index] = Array.empty
   }
