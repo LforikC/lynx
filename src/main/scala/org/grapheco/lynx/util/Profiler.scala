@@ -5,8 +5,7 @@ object Profiler {
 
   def timing[T](message: String = "", runnable: => T): T = if (enableTiming) {
     val t1 = System.currentTimeMillis()
-    var result: T = null.asInstanceOf[T];
-    result = runnable
+    val result: T = runnable
 
     val t2 = System.currentTimeMillis()
 

@@ -5,6 +5,8 @@ import org.apache.commons.lang3.StringUtils
 object FormatUtils {
 
   def resultAsString(columns: Seq[String], data: Seq[Seq[String]]): String = {
+    require(columns != null && columns.nonEmpty, "Columns sequence cannot be null or empty")
+    require(data != null, "Data sequence cannot be null")
     val sb = new StringBuilder
     val numCols = columns.length
 
@@ -53,7 +55,7 @@ object FormatUtils {
       val (leftPart, rightPart, asPart) = extractReturnParts(returnPart)
       val node = extractNode(matchPart)
       "MATCH " + matchPart + "\n" +
-      "WITH " + node.get + "\n" +
+      "WITH " + node + "\n" +
       "MATCH " + leftPart + "\n" +
       "RETURN " + rightPart + " AS " + asPart
     }
@@ -75,11 +77,9 @@ object FormatUtils {
 
     false
   }
-
-  def extractNode(query: String): Option[String] = {
+  def extractNode(query: String): String = {
     val pattern = "\\((\\w+):".r
-
-    pattern.findFirstMatchIn(query).map(_.group(1))
+    pattern.findFirstMatchIn(query).map(_.group(1)).getOrElse("")
   }
 
   def extractReturnParts(query: String): (String, String, String) = {

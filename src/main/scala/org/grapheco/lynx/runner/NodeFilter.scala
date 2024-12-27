@@ -68,12 +68,23 @@ case class NodeFilter(labels: Seq[LynxNodeLabel],
                   if (node.property(propertyName).exists(value.equals)) false else true
                 }
                 case Some(IN) => {
-                  val lynxValues: List[LynxValue] = value.asInstanceOf[LynxList].value
-                  lynxValues.foreach(
-                    f => if (node.property(propertyName).get.valueEq(f)) {
-                     return true
-                    })
-                  false
+                  value match {
+                    case list: LynxList =>
+                      val lynxValues: List[LynxValue] = list.value
+                      lynxValues.foreach(
+                        f => if (node.property(propertyName).get.valueEq(f)) {
+                          return true
+                        })
+                      false
+                    case _ =>
+                      throw new TypeMismatchException(s"Expected LynxList but got ${value.getClass.getSimpleName} for property $propertyName")
+                  }
+//                  val lynxValues: List[LynxValue] = value.asInstanceOf[LynxList].value
+//                  lynxValues.foreach(
+//                    f => if (node.property(propertyName).get.valueEq(f)) {
+//                     return true
+//                    })
+//                  false
                 }
                 case Some(LESS_THAN) =>
                   val nodeValue = node.property(propertyName)
