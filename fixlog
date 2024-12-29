@@ -31,21 +31,51 @@
 （1）由于代码中rs不需要重新赋值，因此将对应代码中的var替换为val。
 （2）在断言中添加了详细的错误信息，以便在测试失败时更清楚失败原因。
 
-7：优化src/main/scala/org/grapheco/lynx/util/FormatUtils.scala
+7、优化src/main/scala/org/grapheco/lynx/util/FormatUtils.scala
 （1）异常处理：extractNode
 使用map获取Option值后直接使用.get方法获取其内容，若Option为None则抛出异常。考虑更安全的处理方式，使用getOrElse提供替代值，以避免运行时潜在的异常。
 （2）入参验证：resultAsString
 验证columns参数不能为null且不能为空序列；验证data参数不能为null。
 
-8：优化src/main/scala/org/grapheco/lynx/util/Profiler.scala
-（1）声明变量：timing
+8、优化src/main/scala/org/grapheco/lynx/util/Profiler.scala
+声明变量：timing
 直接使用val声明变量result。
 
-9：优化src/main/scala/org/grapheco/lynx/runner/CypherRunner.scala
-（1）优化建议：run
+9、优化src/main/scala/org/grapheco/lynx/runner/CypherRunner.scala
+优化建议：run
 在run方法中，未对各个步骤可能出现的异常进行妥善处理，可在每个可能抛出异常的关键操作处添加try-catch块，以对不同类型的异常进行针对性处理。
 
-10：优化src/main/scala/org/grapheco/lynx/runner/NodeFilter.scala
-（1）异常处理：matches
+10、优化src/main/scala/org/grapheco/lynx/runner/NodeFilter.scala
+异常处理：matches
 在matches方法中，在IN操作符的处理逻辑中，将value强制转换为LynxList类型，若传入的LynxValue不是LynxList类型，运行时会抛出异常。考虑添加类型判断来确保转换的安全性。
 
+11、优化src/main/scala/org/grapheco/lynx/logical/planner/translators/MatchTranslator.scala
+（1）用 Seq 替换了可变的 ArrayBuffer，避免了潜在的线程安全问题。
+（2）分解逻辑：将 combinePatternMatch 和 matchPatternPart 简化为单一职责的函数，减少了嵌套深度。
+（3）可扩展性更强，未来如果需要新增模式匹配类型，只需增加新的分支。
+
+12、优化src/main/scala/org/grapheco/lynx/logical/planner/translators/WithTranslator.scala
+（1）解耦逻辑
+当前代码中对 With 的处理逻辑耦合在一起，match 结构太过复杂，不便于扩展。改进为分离处理逻辑，使用单独的函数封装逻辑以提高可读性和复用性。
+（2）提升可扩展性
+增加对不同子项（如 ReturnItems、Where、OrderBy）处理的独立封装，便于未来扩展时在单一职责函数中改动。
+
+13、优化src/main/scala/org/grapheco/lynx/logical/planner/DefaultLogicalPlanner.scala
+（1）增强错误处理
+当前代码中对未匹配的 AST 节点直接抛出了 UnknownASTNodeException，这种处理方式在代码调试时信息较少，建议改为更详细的日志或错误信息。
+（2）解耦逻辑
+将 translate 方法的分支逻辑拆分为单独的处理函数，提高代码复用性和可读性。
+
+14、优化src/main/scala/org/grapheco/lynx/physical/planner/translators/PPTPatternMatchTranslator.scala
+（1）简化逻辑结构，优化代码可读性
+当前的代码逻辑存在多层嵌套，特别是在处理argumentHit和chain时，逻辑重复性较高。将重复逻辑抽取为独立的方法，以减少嵌套层级，提高可读性和复用性。
+（2）将if arguments is not the first variable? these need moved to Optimizer!逻辑处理移到优化阶段
+代码中对argumentHit的处理直接放在planPatternMatch中，这种逻辑应该属于优化阶段的职责，而不应该在翻译器中处理。通过添加注释和隔离代码，明确将这一逻辑单独封装，未来可以迁移到优化器。
+
+15、优化src/main/scala/org/grapheco/lynx/physical/planner/DefaultPhysicalPlanner.scala
+（1）优化错误处理：
+当前代码中对不支持的逻辑计划直接抛出 Exception，缺乏具体信息，建议改为自定义异常或更详细的日志信息。
+（2）分离分支逻辑：
+目前在 plan 方法中所有逻辑都集中在 match 分支里，导致代码臃肿且难以维护。可以将每个分支的处理逻辑提取为单独的方法。
+（3）提高代码复用性和扩展性：
+许多逻辑中对输入计划的处理是类似的，可以提取通用函数以减少重复代码。
